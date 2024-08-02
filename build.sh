@@ -12,7 +12,7 @@ fi
 
 TARGET="all"
 BUILD_TYPE="all"
-BUILD_DEBUG="default"
+BUILD_DEBUG="none"
 SKIP_ENV=0
 COPY_OUT=0
 ARCHIVE_OUT=0
