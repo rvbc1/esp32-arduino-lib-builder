@@ -124,37 +124,11 @@ jobs:
       - name: Combine artifacts
         run: bash ./tools/combine-artifacts.sh
 
-    # ============== NOWY STEP: dodatkowe rozpakowanie tar.gz i stworzenie "unpacked.zip" ==============
-      - name: Create "unpacked" ZIP
-        run: |
-          # Rozpakowujemy TAR.GZ znajdujący się wewnątrz ZIP-a,
-          # bo combine-artifacts.sh tworzy w dist/esp32-arduino-libs.zip
-          # plik esp32-arduino-libs.tar.gz. Musimy go najpierw wyciągnąć
-          # z ZIP-a, a potem rozpakować tar.gz i stworzyć nowy ZIP.
-
-          # 1. Rozpakuj "esp32-arduino-libs.zip" do tymczasowego folderu
-          mkdir -p dist/tmp-zip
-          unzip dist/esp32-arduino-libs.zip -d dist/tmp-zip
-
-          # 2. Załóżmy, że w środku (po unzip) pojawia się: esp32-arduino-libs.tar.gz
-          mkdir -p dist/tmp-libs
-          tar -xzf dist/tmp-zip/esp32-arduino-libs.tar.gz -C dist/tmp-libs
-
-          # 3. Tworzymy "rozpakowany" ZIP
-          cd dist/tmp-libs
-          zip -r ../esp32-arduino-libs-unpacked.zip .
-          cd ../..
-
-      # Tutaj uploadujemy DWA pliki:
-      #   1) Oryginalny "esp32-arduino-libs.zip" (z tar.gz w środku),
-      #   2) Nowy "esp32-arduino-libs-unpacked.zip" z "gołą" zawartością.
-      - name: Upload esp32-arduino-libs archives
+      - name: Upload full esp32-arduino-libs archive
         uses: actions/upload-artifact@v4
         with:
           name: esp32-arduino-libs-${{ env.libs_branch }}
-          path: |
-            dist/esp32-arduino-libs.zip
-            dist/esp32-arduino-libs-unpacked.zip
+          path: dist/esp32-arduino-libs.zip
           compression-level: 0
 
       - name: Push changes

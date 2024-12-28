@@ -50,33 +50,56 @@ jobs:
         path: dist
 
   combine-artifacts:
-    name: Combine artifacts
-    needs: build-libs
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: dist
-          pattern: artifacts-*
-          merge-multiple: true
-
-      - shell: bash
-        run: |
-          mkdir -p out
-          find dist -name 'arduino-esp32-libs-esp*.tar.gz' -exec tar zxvf {} -C out \;
-          cd out/tools/esp32-arduino-libs && tar zcf ../../../dist/esp32-arduino-libs.tar.gz * && cd ../../..
-          cp out/package_esp32_index.template.json dist/package_esp32_index.template.json
-
-      - name: Upload full esp32-arduino-libs archive
-        uses: actions/upload-artifact@v4
-        with:
-          name: esp32-arduino-libs
-          path: dist/esp32-arduino-libs.tar.gz
-
-      - name: Upload package_esp32_index.template.json
-        uses: actions/upload-artifact@v4
-        with:
-          name: package-esp32-index-json
-          path: dist/package_esp32_index.template.json
-
+      name: Combine artifacts
+      needs: build-libs
+      runs-on: ubuntu-latest
+      steps:
+        - name: Download artifacts
+          uses: actions/download-artifact@v4
+          with:
+            path: dist
+            pattern: artifacts-*
+            merge-multiple: true
+  
+        - shell: bash
+          run: |
+            mkdir -p out
+            # 1. Rozpakowujemy wszystkie pliki `arduino-esp32-libs-esp*.tar.gz` do `out`
+            find dist -name 'arduino-esp32-libs-esp*.tar.gz' -exec tar zxvf {} -C out \;
+  
+            # 2. Tworzymy docelowe archiwum esp32-arduino-libs.tar.gz w `dist`
+            cd out/tools/esp32-arduino-libs
+            tar zcf ../../../dist/esp32-arduino-libs.tar.gz *
+            cd ../../..
+  
+            # 3. Kopiujemy package_esp32_index.template.json do dist
+            cp out/package_esp32_index.template.json dist/package_esp32_index.template.json
+  
+        # --- DODAJEMY NOWY KROK, który rozpakowuje tar.gz i tworzy ZIP z gołą zawartością ---
+        - shell: bash
+          name: Create unpacked ZIP
+          run: |
+            # Rozpakuj do katalogu tymczasowego
+            mkdir -p dist/tmp-libs
+            tar zxf dist/esp32-arduino-libs.tar.gz -C dist/tmp-libs
+  
+            # Stwórz ZIP ze wszystkimi rozpakowanymi plikami
+            cd dist/tmp-libs
+            zip -r ../esp32-arduino-libs-unpacked.zip .
+            cd ../..
+        
+        - name: Upload full esp32-arduino-libs archive
+          uses: actions/upload-artifact@v4
+          with:
+            # Oryginalny tar.gz + nowo-utworzony ZIP
+            name: esp32-arduino-libs
+            path: |
+              dist/esp32-arduino-libs.tar.gz
+              dist/esp32-arduino-libs-unpacked.zip
+  
+        - name: Upload package_esp32_index.template.json
+          uses: actions/upload-artifact@v4
+          with:
+            name: package-esp32-index-json
+            path: dist/package_esp32_index.template.json
+      
