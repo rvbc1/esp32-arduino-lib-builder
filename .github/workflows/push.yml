@@ -4,6 +4,7 @@ on:
   push:
     branches:
     - master
+    - gtw
   pull_request:
     paths:
       - "**"
