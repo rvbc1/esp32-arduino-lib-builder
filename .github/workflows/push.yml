@@ -4,6 +4,7 @@ on:
   push:
     branches:
     - master
+    - old-master
   pull_request:
     paths:
       - "**"
