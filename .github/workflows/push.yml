@@ -4,6 +4,7 @@ on:
   push:
     branches:
     - master
+    - aflx4
   pull_request:
     paths:
       - "**"
