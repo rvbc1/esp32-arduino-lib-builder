@@ -41,8 +41,14 @@ fi
 
 if [ "$AR_BRANCH" ]; then
 	echo "AR_BRANCH='$AR_BRANCH'"
-	git -C "$AR_COMPS/arduino" fetch --all && \
-	git -C "$AR_COMPS/arduino" checkout "$AR_BRANCH" && \
-	git -C "$AR_COMPS/arduino" pull --ff-only
+	# Upewnij się, że mamy wszystkie tagi (checkout tagu bywa problematyczny bez fetch --tags)
+	git -C "$AR_COMPS/arduino" fetch --all --tags
+	# Jeżeli wskazano tag, przełącz się na niego; w przeciwnym razie spróbuj gałęzi
+	if git -C "$AR_COMPS/arduino" rev-parse "refs/tags/$AR_BRANCH" >/dev/null 2>&1; then
+		git -C "$AR_COMPS/arduino" checkout "tags/$AR_BRANCH"
+	else
+		git -C "$AR_COMPS/arduino" checkout "$AR_BRANCH"
+		git -C "$AR_COMPS/arduino" pull --ff-only
+	fi
 fi
 if [ $? -ne 0 ]; then exit 1; fi
