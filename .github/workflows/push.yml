@@ -4,6 +4,7 @@ on:
   push:
     branches:
     - master
+    - gtw-3.3.5
   pull_request:
     paths:
       - "**"
@@ -25,11 +26,15 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        target: [esp32, esp32s2, esp32s3, esp32c2, esp32c3, esp32c6, esp32h2, esp32p4, esp32p4_es, esp32c5, esp32c61]
+        target: [esp32s3]
       fail-fast: false
     steps:
     - name: Checkout repository
       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+    - name: Pin Arduino core to 3.3.5
+      if: ${{ github.ref_name == 'gtw-3.3.5' || github.head_ref == 'gtw-3.3.5' }}
+      run: echo "AR_BRANCH=3.3.5" >> $GITHUB_ENV
 
     - name: Install dependencies
       run: bash ./tools/prepare-ci.sh
@@ -80,4 +85,3 @@ jobs:
         with:
           name: package-esp32-index-json
           path: dist/package_esp32_index.template.json
-
