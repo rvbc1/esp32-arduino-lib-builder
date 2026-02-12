@@ -4,7 +4,7 @@ on:
   push:
     branches:
     - master
-    - gtw-3.3.5
+    - gtw-3.3.7
   pull_request:
     paths:
       - "**"
