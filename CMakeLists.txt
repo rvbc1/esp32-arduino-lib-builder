@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION 3.5)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
-project(arduino-lib-builder)
+project(aquael-bt-mqtt-gateway)
 
 idf_build_get_property(elf EXECUTABLE GENERATOR_EXPRESSION)
 

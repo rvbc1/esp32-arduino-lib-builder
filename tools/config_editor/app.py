@@ -10,7 +10,7 @@ Requires Python 3.9 or later.
 
 The application is built using the "textual" library, which is a Python library for building text-based user interfaces.
 
-Note that this application still needs the requirements from esp32-arduino-lib-builder to be installed.
+Note that this application still needs the requirements from aquael-bt-mqtt-gateway to be installed.
 
 Command line arguments:
     -t, --target <target>          Comma-separated list of targets to be compiled.

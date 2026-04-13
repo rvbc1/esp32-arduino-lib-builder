@@ -100,7 +100,7 @@ if [ -d "managed_components/espressif__esp-zboss-lib/lib/$IDF_TARGET/" ]; then
 fi
 
 #collect includes, defines and c-flags
-str=`cat build/compile_commands.json | grep arduino-lib-builder-gcc.c | grep command | cut -d':' -f2 | cut -d',' -f1`
+str=`cat build/compile_commands.json | grep aquael-bt-mqtt-gateway-gcc.c | grep command | cut -d':' -f2 | cut -d',' -f1`
 str="${str:2:${#str}-1}" #remove leading space and quotes
 str=`printf '%b' "$str"` #unescape the string
 set -- $str
@@ -136,7 +136,7 @@ for item in "${@:2:${#@}-5}"; do
 done
 
 #collect asm-flags
-str=`cat build/compile_commands.json | grep arduino-lib-builder-as.S | grep command | cut -d':' -f2 | cut -d',' -f1`
+str=`cat build/compile_commands.json | grep aquael-bt-mqtt-gateway-as.S | grep command | cut -d':' -f2 | cut -d',' -f1`
 str="${str:2:${#str}-1}" #remove leading space and quotes
 str=`printf '%b' "$str"` #unescape the string
 set -- $str
@@ -155,7 +155,7 @@ for item in "${@:2:${#@}-5}"; do
 done
 
 #collect cpp-flags
-str=`cat build/compile_commands.json | grep arduino-lib-builder-cpp.cpp | grep command | cut -d':' -f2 | cut -d',' -f1`
+str=`cat build/compile_commands.json | grep aquael-bt-mqtt-gateway-cpp.cpp | grep command | cut -d':' -f2 | cut -d',' -f1`
 str="${str:2:${#str}-1}" #remove leading space and quotes
 str=`printf '%b' "$str"` #unescape the string
 set -- $str
@@ -182,8 +182,8 @@ done
 add_next=0
 is_dir=0
 is_script=0
-if [ -f "build/CMakeFiles/arduino-lib-builder.elf.dir/link.txt" ]; then
-	str=`cat build/CMakeFiles/arduino-lib-builder.elf.dir/link.txt`
+if [ -f "build/CMakeFiles/aquael-bt-mqtt-gateway.elf.dir/link.txt" ]; then
+	str=`cat build/CMakeFiles/aquael-bt-mqtt-gateway.elf.dir/link.txt`
 else
 	libs=`cat build/build.ninja | grep LINK_LIBRARIES`
 	libs="${libs:19:${#libs}-1}"

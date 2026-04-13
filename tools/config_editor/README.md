@@ -7,7 +7,7 @@ It has mouse support and can be pre-configured using command line arguments.
 ## Requirements
   - Python 3.9 or later
   - Install the required packages using `pip install -r requirements.txt`
-  - The requirements from esp32-arduino-lib-builder
+  - The requirements from aquael-bt-mqtt-gateway
 
 ## Troubleshooting
 
