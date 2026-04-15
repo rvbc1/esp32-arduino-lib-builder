@@ -99,6 +99,18 @@ if [ -d "managed_components/espressif__esp-zboss-lib/lib/$IDF_TARGET/" ]; then
 	EXCLUDE_LIBS+="zboss_stack.ed;zboss_stack.zczr;zboss_port.native;zboss_port.native.debug;zboss_port.remote;zboss_port.remote.debug;"
 fi
 
+# Strip surrounding quotes and absolute path from -specs=/path/file.specs -> -specs=file.specs
+# All other flags are passed through unchanged (quotes stripped).
+function pio_flag() {
+	local flag="${1%\"}"  # strip trailing "
+	flag="${flag#\"}"     # strip leading "
+	if [[ "${flag:0:7}" = "-specs=" ]]; then
+		echo "-specs=$(basename "${flag:7}")"
+	else
+		echo "$flag"
+	fi
+}
+
 #collect includes, defines and c-flags
 str=`cat build/compile_commands.json | grep arduino-lib-builder-gcc.c | grep command | cut -d':' -f2 | cut -d',' -f1`
 str="${str:2:${#str}-1}" #remove leading space and quotes
@@ -106,7 +118,16 @@ str=`printf '%b' "$str"` #unescape the string
 set -- $str
 for item in "${@:2:${#@}-5}"; do
 	prefix="${item:0:2}"
-	if [ "$prefix" = "-I" ]; then
+	if [ "${item:0:1}" = "@" ]; then
+		xfile="${item:3:${#item}-5}"
+		if [ ! -f "$xfile" ]; then echo "File '$xfile' does not exist!"; exit 1; fi
+		echo "Parse CC file '$xfile'"
+		for xitem in `cat "$xfile"`; do
+			C_FLAGS+="$xitem "
+			LD_FLAGS+="$xitem "
+			PIOARDUINO_LD_FLAGS+="$(pio_flag "$xitem") "
+		done
+	elif [ "$prefix" = "-I" ]; then
 		item="${item:2}"
 		if [ "${item:0:1}" = "/" ]; then
 			item=`get_actual_path $item`
@@ -142,13 +163,25 @@ str=`printf '%b' "$str"` #unescape the string
 set -- $str
 for item in "${@:2:${#@}-5}"; do
 	prefix="${item:0:2}"
-	if [[ "$prefix" != "-I" && "$prefix" != "-D" && "$item" != "-Wall" && "$item" != "-Werror=all"  && "$item" != "-Wextra" && "$prefix" != "-O" ]]; then
+	if [ "${item:0:1}" = "@" ]; then
+		xfile="${item:3:${#item}-5}"
+		if [ ! -f "$xfile" ]; then echo "File '$xfile' does not exist!"; exit 1; fi
+		echo "Parse AS file '$xfile'"
+		for xitem in `cat "$xfile"`; do
+			AS_FLAGS+="$xitem "
+			if [[ "${xitem:0:6}" != "-mtune" && "${xitem:0:6}" != "-specs" ]]; then
+				PIOARDUINO_AS_FLAGS+="$xitem "
+			fi
+		done
+	elif [[ "$prefix" != "-I" && "$prefix" != "-D" && "$item" != "-Wall" && "$item" != "-Werror=all"  && "$item" != "-Wextra" && "$prefix" != "-O" ]]; then
 		if [[ "${item:0:23}" != "-mfix-esp32-psram-cache" && "${item:0:18}" != "-fmacro-prefix-map" && "${item:0:20}" != "-fdiagnostics-color=" && "${item:0:19}" != "-fdebug-prefix-map=" ]]; then
 			AS_FLAGS+="$item "
-			if [[ $C_FLAGS == *"$item"* ]]; then
-				PIOARDUINO_CC_FLAGS+="$item "
-			else
-				PIOARDUINO_AS_FLAGS+="$item "
+			if [[ "${item:0:6}" != "-mtune" && "${item:0:6}" != "-specs" ]]; then
+				if [[ $C_FLAGS == *"$item"* ]]; then
+					PIOARDUINO_CC_FLAGS+="$item "
+				else
+					PIOARDUINO_AS_FLAGS+="$item "
+				fi
 			fi
 		fi
 	fi
@@ -161,11 +194,19 @@ str=`printf '%b' "$str"` #unescape the string
 set -- $str
 for item in "${@:2:${#@}-5}"; do
 	prefix="${item:0:2}"
-	if [[ "$prefix" != "-I" && "$prefix" != "-D" && "$item" != "-Wall" && "$item" != "-Werror=all"  && "$item" != "-Wextra" && "$prefix" != "-O" ]]; then
+	if [ "${item:0:1}" = "@" ]; then
+		xfile="${item:3:${#item}-5}"
+		if [ ! -f "$xfile" ]; then echo "File '$xfile' does not exist!"; exit 1; fi
+		echo "Parse CXX file '$xfile'"
+		for xitem in `cat "$xfile"`; do
+			CPP_FLAGS+="$xitem "
+			PIOARDUINO_CXX_FLAGS+="$(pio_flag "$xitem") "
+		done
+	elif [[ "$prefix" != "-I" && "$prefix" != "-D" && "$item" != "-Wall" && "$item" != "-Werror=all"  && "$item" != "-Wextra" && "$prefix" != "-O" ]]; then
 		if [[ "${item:0:23}" != "-mfix-esp32-psram-cache" && "${item:0:18}" != "-fmacro-prefix-map" && "${item:0:20}" != "-fdiagnostics-color=" && "${item:0:19}" != "-fdebug-prefix-map=" ]]; then
 			CPP_FLAGS+="$item "
 			if [[ $PIOARDUINO_CC_FLAGS != *"$item"* ]]; then
-				PIOARDUINO_CXX_FLAGS+="$item "
+				PIOARDUINO_CXX_FLAGS+="$(pio_flag "$item") "
 			fi
 		fi
 	fi
@@ -174,7 +215,7 @@ done
 set -- $C_FLAGS
 for item; do
 	if [[ $PIOARDUINO_CC_FLAGS != *"$item"* ]]; then
-		PIOARDUINO_C_FLAGS+="$item "
+		PIOARDUINO_C_FLAGS+="$(pio_flag "$item") "
 	fi
 done
 
@@ -236,7 +277,7 @@ for item; do
 				is_dir=0
 			elif [[ "${item:0:23}" != "-mfix-esp32-psram-cache" && "${item:0:18}" != "-fmacro-prefix-map" && "${item:0:19}" != "-fdebug-prefix-map=" && "${item:0:17}" != "-Wl,--start-group" && "${item:0:15}" != "-Wl,--end-group" ]]; then
 				LD_FLAGS+="$item "
-				PIOARDUINO_LD_FLAGS+="$item "
+				PIOARDUINO_LD_FLAGS+="$(pio_flag "$item") "
 			fi
 		fi
 	else
@@ -306,6 +347,14 @@ for item; do
 				fi
 			elif [[ "${item:${#item}-4:4}" = ".obj" || "${item:${#item}-4:4}" = ".elf" || "${item:${#item}-4:4}" = "-g++" ]]; then
 				item="$item"
+			elif [ "${item:0:1}" = "@" ]; then
+				xfile="${item:2:${#item}-3}"
+				if [ ! -f "$xfile" ]; then echo "File '$xfile' does not exist!"; exit 1; fi
+				echo "Parse LD file '$xfile'"
+				for xitem in `cat "$xfile"`; do
+					LD_FLAGS+="$xitem "
+					PIOARDUINO_LD_FLAGS+="$(pio_flag "$xitem") "
+				done
 			else
 				echo "*** BAD LD ITEM: $item ${item:${#item}-2:2}"
 			fi
@@ -320,12 +369,12 @@ done
 mkdir -p "$AR_SDK"
 
 # Keep only -march, -mabi and -mlongcalls flags for Assembler
-PIOARDUINO_AS_FLAGS=$(
-    {
-        echo "$PIOARDUINO_CXX_FLAGS" | grep -oE '\-march=[^[:space:]]*|\-mabi=[^[:space:]]*|\-mlongcalls'
-        echo "$PIOARDUINO_CC_FLAGS" | grep -oE '\-march=[^[:space:]]*|\-mabi=[^[:space:]]*|\-mlongcalls'
-    } | awk '!seen[$0]++' | paste -sd ' '
-)
+# PIOARDUINO_AS_FLAGS=$(
+#     {
+#         echo "$PIOARDUINO_CXX_FLAGS" | grep -oE '\-march=[^[:space:]]*|\-mabi=[^[:space:]]*|\-mlongcalls'
+#         echo "$PIOARDUINO_CC_FLAGS" | grep -oE '\-march=[^[:space:]]*|\-mabi=[^[:space:]]*|\-mlongcalls'
+#     } | awk '!seen[$0]++' | paste -sd ' '
+# )
 
 # start generation of pioarduino-build.py
 AR_PIOARDUINO_PY="$AR_SDK/pioarduino-build.py"
@@ -622,6 +671,11 @@ done
 
 # end generation of pioarduino-build.py
 cat configs/pioarduino_end.txt >> "$AR_PIOARDUINO_PY"
+
+# Matter Library adjustments
+echo "Fixing $AR_PIOARDUINO_PY"
+sed 's/\\\"-DCHIP_ADDRESS_RESOLVE_IMPL_INCLUDE_HEADER=<lib\/address_resolve\/AddressResolve_DefaultImpl.h>\\\"/-DCHIP_HAVE_CONFIG_H/' $AR_PIOARDUINO_PY > $AR_PIOARDUINO_PY.temp
+mv $AR_PIOARDUINO_PY.temp $AR_PIOARDUINO_PY
 
 # replace double backslashes with single one
 DEFINES=`echo "$DEFINES" | tr -s '\'`
