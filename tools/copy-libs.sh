@@ -321,6 +321,7 @@ for item; do
 									if [ -f "$n_item" ]; then
 										if [[ $EXCLUDE_LIBS != *";$lname;"* ]]; then
 											#echo "3. renamed add: -l$n_name"
+											LD_LIB_FILES+="$n_item "
 											LD_LIBS+="-l$n_name "
 										fi
 										break

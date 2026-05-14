@@ -195,7 +195,13 @@ extern "C" {
 /*  HOST CONFIGURATION  */
 /*                      */
 
-#define CFG_TUH_ENABLED             CFG_TUD_ENABLED
+#ifndef CONFIG_TINYUSB_HOST_ENABLED
+#define CONFIG_TINYUSB_HOST_ENABLED 0
+#endif
+
+#define CFG_TUH_ENABLED             CONFIG_TINYUSB_HOST_ENABLED
+
+#if CFG_TUH_ENABLED
 #define CFG_TUSB_RHPORT1_MODE       OPT_MODE_HOST
 #define BOARD_TUH_RHPORT            1
 #define BOARD_TUH_MAX_SPEED         CFG_TUD_MAX_SPEED
@@ -220,6 +226,25 @@ extern "C" {
 //------------- CDC -------------//
 #define CFG_TUH_CDC_LINE_CONTROL_ON_ENUM    0x03
 #define CFG_TUH_CDC_LINE_CODING_ON_ENUM   { 115200, CDC_LINE_CODING_STOP_BITS_1, CDC_LINE_CODING_PARITY_NONE, 8 }
+#else
+#define CFG_TUSB_RHPORT1_MODE       OPT_MODE_NONE
+#define BOARD_TUH_RHPORT            1
+#define BOARD_TUH_MAX_SPEED         CFG_TUD_MAX_SPEED
+#define CFG_TUH_ENUMERATION_BUFSIZE 0
+
+#define CFG_TUH_HUB                 0
+#define CFG_TUH_CDC                 0
+#define CFG_TUH_CDC_FTDI            0
+#define CFG_TUH_CDC_CP210X          0
+#define CFG_TUH_CDC_CH34X           0
+#define CFG_TUH_HID                 0
+#define CFG_TUH_MSC                 0
+#define CFG_TUH_MIDI                0
+#define CFG_TUH_DEVICE_MAX          0
+
+#define CFG_TUH_HID_EPIN_BUFSIZE    0
+#define CFG_TUH_HID_EPOUT_BUFSIZE   0
+#endif
 
 #ifdef __cplusplus
 }
